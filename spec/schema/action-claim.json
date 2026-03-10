@@ -1,0 +1,463 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/RudsonCarvalho/action-claim-ontology/spec/schema/action-claim.json",
+  "title": "ActionClaim",
+  "description": "Pre-execution governance object. A contestable, machine-evaluable proposal that a specific world-state transition should be permitted. v0.1 — draft.",
+  "type": "object",
+  "required": [
+    "proposed_transition",
+    "originating_goal",
+    "relevant_context_basis",
+    "preconditions",
+    "delegation_chain"
+  ],
+  "properties": {
+
+    "proposed_transition": {
+      "description": "The specific world-state change the agent proposes to produce. Describes an effect, not a tool invocation.",
+      "type": "object",
+      "required": ["transition_type", "operation", "resource_ref", "direction"],
+      "properties": {
+        "transition_type": {
+          "description": "Category of world-state change.",
+          "type": "string",
+          "enum": [
+            "internal_read",
+            "internal_write",
+            "internal_execute",
+            "external_data_disclosure",
+            "external_delegation",
+            "external_execute",
+            "notify",
+            "escalate"
+          ]
+        },
+        "operation": {
+          "description": "Primitive operation applied to the resource.",
+          "type": "string",
+          "enum": [
+            "read",
+            "create",
+            "update",
+            "delete",
+            "disclose",
+            "delegate",
+            "execute",
+            "notify",
+            "escalate"
+          ]
+        },
+        "resource_ref": {
+          "description": "Identifier or URI of the resource being acted upon.",
+          "type": "string",
+          "minLength": 1
+        },
+        "direction": {
+          "description": "Whether the effect is internal or crosses a trust boundary.",
+          "type": "string",
+          "enum": [
+            "internal",
+            "outbound_trusted",
+            "outbound_third_party"
+          ]
+        },
+        "structured_core": {
+          "description": "Type-specific structured description of the transition. Schema varies by transition_type.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "originating_goal": {
+      "description": "The high-level goal from which this proposed transition was derived. Used to assess necessity and proportionality.",
+      "type": "string",
+      "minLength": 1
+    },
+
+    "relevant_context_basis": {
+      "description": "Context elements that led the agent to select this action. Supports contestability.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["source", "summary", "relevance"],
+        "properties": {
+          "source": {
+            "description": "Where the context element came from.",
+            "type": "string",
+            "enum": ["instruction", "memory", "tool_result", "observation", "prior_claim", "external_input"]
+          },
+          "summary": {
+            "description": "Brief description of the context element.",
+            "type": "string",
+            "minLength": 1
+          },
+          "relevance": {
+            "description": "Why this element was relevant to action selection.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "preconditions": {
+      "description": "Conditions the agent asserts must hold for the proposed transition to be valid. Verified by the evaluator.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["description", "verifiable_by"],
+        "properties": {
+          "description": {
+            "description": "Human-readable statement of the condition.",
+            "type": "string",
+            "minLength": 1
+          },
+          "verifiable_by": {
+            "description": "How the evaluator can verify this condition.",
+            "type": "string",
+            "enum": ["system_check", "policy_lookup", "human_review", "cryptographic_proof"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "capability_scope": {
+      "description": "Derived by the governance system. What the agent is technically and normatively permitted to do. Never authored by the agent.",
+      "type": "object",
+      "properties": {
+        "technical": {
+          "description": "Capabilities the agent has access to at the infrastructure level.",
+          "type": "object",
+          "properties": {
+            "can_call": {
+              "description": "Tool or API identifiers the agent can invoke.",
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": true
+        },
+        "normative": {
+          "description": "Overall authorization assessment computed from policy.",
+          "type": "string",
+          "enum": ["AUTHORIZED", "REQUIRES_REVIEW", "UNAUTHORIZED"]
+        },
+        "normative_basis": {
+          "description": "Policy reference or rule that produces the normative value.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "impact_profile": {
+      "description": "Derived by the governance system. Characterizes the effects of the proposed transition along governance-relevant dimensions.",
+      "type": "object",
+      "properties": {
+        "reversibility": {
+          "description": "Whether the transition can be undone.",
+          "type": "string",
+          "enum": ["reversible", "partially_reversible", "irreversible"]
+        },
+        "persistence": {
+          "description": "How long the effect persists.",
+          "type": "string",
+          "enum": ["ephemeral", "session", "persistent", "permanent"]
+        },
+        "sensitivity": {
+          "description": "Sensitivity level of the affected resource and transition.",
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+        },
+        "regulatory_significance": {
+          "description": "Whether the transition has implications under applicable regulations.",
+          "type": "boolean"
+        },
+        "regulatory_tags": {
+          "description": "Applicable regulatory categories.",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "justification_gap": {
+      "description": "Derived by the governance system. Distance between claimed mandate and proposed effect.",
+      "type": "object",
+      "properties": {
+        "level": {
+          "description": "Aggregate gap level across the full delegation chain.",
+          "type": "string",
+          "enum": ["NONE", "MINOR", "SIGNIFICANT", "CRITICAL"]
+        },
+        "gap_rationale": {
+          "description": "Human-readable description of what creates the gap.",
+          "type": "string"
+        },
+        "local_gap": {
+          "description": "Gap at the immediate principal-to-agent boundary.",
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": ["NONE", "MINOR", "SIGNIFICANT", "CRITICAL"]
+            },
+            "detail": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "chain_gap": {
+          "description": "Aggregate gap across the full delegation chain.",
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": ["NONE", "MINOR", "SIGNIFICANT", "CRITICAL"]
+            },
+            "detail": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "delegation_chain": {
+      "description": "Supplied by the delegation infrastructure. Ordered sequence of delegation hops from root human principal to acting agent.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/DelegationHop"
+      }
+    }
+
+  },
+  "additionalProperties": false,
+
+  "$defs": {
+    "DelegationHop": {
+      "description": "A single principal-to-agent delegation grant.",
+      "type": "object",
+      "required": ["hop_index", "principal", "delegate", "mandate", "delegated_at"],
+      "properties": {
+        "hop_index": {
+          "description": "Position in the chain. 0 = root principal to first delegate.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "principal": {
+          "description": "The granting party.",
+          "type": "object",
+          "required": ["id", "type"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "type": {
+              "type": "string",
+              "enum": ["human", "agent"]
+            },
+            "identity_ref": {
+              "description": "Cryptographic identity reference (e.g., SPIFFE SVID URI).",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "delegate": {
+          "description": "The receiving agent.",
+          "type": "object",
+          "required": ["id", "type"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "type": {
+              "type": "string",
+              "enum": ["agent"]
+            },
+            "identity_ref": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "mandate": {
+          "description": "The grant of authority.",
+          "type": "object",
+          "required": ["description", "permitted_transition_types"],
+          "properties": {
+            "description": {
+              "description": "Human-readable summary of the grant.",
+              "type": "string",
+              "minLength": 1
+            },
+            "permitted_transition_types": {
+              "description": "Transition types the delegate is authorized to propose.",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "internal_read",
+                  "internal_write",
+                  "internal_execute",
+                  "external_data_disclosure",
+                  "external_delegation",
+                  "external_execute",
+                  "notify",
+                  "escalate"
+                ]
+              }
+            },
+            "permitted_resources": {
+              "description": "Resource patterns or references within scope.",
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "constraints": {
+              "description": "Restrictions that apply to the granted mandate.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["constraint_type", "description"],
+                "properties": {
+                  "constraint_type": {
+                    "type": "string",
+                    "enum": [
+                      "time_bound",
+                      "scope_limit",
+                      "require_escalation",
+                      "external_disclosure_prohibited",
+                      "rate_limit",
+                      "human_in_the_loop"
+                    ]
+                  },
+                  "description": { "type": "string", "minLength": 1 },
+                  "value": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "delegated_at": {
+          "description": "Timestamp of the delegation event.",
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+
+  "examples": [
+    {
+      "$comment": "Agent B proposes external data disclosure to CRM Partner Z",
+      "proposed_transition": {
+        "transition_type": "external_data_disclosure",
+        "operation": "disclose",
+        "resource_ref": "dataset://crm/customers/q1-summary",
+        "direction": "outbound_third_party",
+        "structured_core": {
+          "recipient": "crm-partner-z",
+          "data_classification": "CONFIDENTIAL",
+          "disclosure_format": "JSON export"
+        }
+      },
+      "originating_goal": "Sync customer summary with CRM Partner Z for Q1 reporting",
+      "relevant_context_basis": [
+        {
+          "source": "instruction",
+          "summary": "Weekly sync task from orchestrator agent",
+          "relevance": "Task specifies CRM sync as a required step"
+        }
+      ],
+      "preconditions": [
+        {
+          "description": "CRM Partner Z is an authorized data recipient under current data sharing agreement",
+          "verifiable_by": "policy_lookup"
+        }
+      ],
+      "capability_scope": {
+        "technical": { "can_call": ["crm_export_api"] },
+        "normative": "REQUIRES_REVIEW",
+        "normative_basis": "policy:external-disclosure-v2, rule:third-party-requires-review"
+      },
+      "impact_profile": {
+        "reversibility": "irreversible",
+        "persistence": "persistent",
+        "sensitivity": "HIGH",
+        "regulatory_significance": true,
+        "regulatory_tags": ["GDPR_data_transfer"]
+      },
+      "justification_gap": {
+        "level": "SIGNIFICANT",
+        "gap_rationale": "Delegation chain authorizes internal data operations; external third-party disclosure was not explicitly granted",
+        "local_gap": {
+          "level": "SIGNIFICANT",
+          "detail": "Agent B mandate does not include external_data_disclosure to third parties"
+        },
+        "chain_gap": {
+          "level": "SIGNIFICANT",
+          "detail": "No hop in the chain explicitly authorizes third-party disclosure"
+        }
+      },
+      "delegation_chain": [
+        {
+          "hop_index": 0,
+          "principal": {
+            "id": "user:alice@example.com",
+            "type": "human",
+            "identity_ref": "mailto:alice@example.com"
+          },
+          "delegate": {
+            "id": "agent:orchestrator-v2",
+            "type": "agent",
+            "identity_ref": "spiffe://example.com/agents/orchestrator-v2"
+          },
+          "mandate": {
+            "description": "Manage weekly customer feedback reporting pipeline",
+            "permitted_transition_types": ["internal_read", "internal_write", "internal_execute", "notify"],
+            "permitted_resources": ["dataset://crm/customers/*", "report://weekly/*"],
+            "constraints": [
+              {
+                "constraint_type": "external_disclosure_prohibited",
+                "description": "No external disclosure without separate explicit authorization",
+                "value": "external_disclosure_prohibited"
+              }
+            ]
+          },
+          "delegated_at": "2026-01-06T09:00:00Z"
+        },
+        {
+          "hop_index": 1,
+          "principal": {
+            "id": "agent:orchestrator-v2",
+            "type": "agent",
+            "identity_ref": "spiffe://example.com/agents/orchestrator-v2"
+          },
+          "delegate": {
+            "id": "agent:export-agent-b",
+            "type": "agent",
+            "identity_ref": "spiffe://example.com/agents/export-agent-b"
+          },
+          "mandate": {
+            "description": "Export finalized weekly report to stakeholders",
+            "permitted_transition_types": ["internal_read", "notify"],
+            "permitted_resources": ["report://weekly/staging/*"],
+            "constraints": [
+              {
+                "constraint_type": "require_escalation",
+                "description": "Any external action requires escalation to orchestrator",
+                "value": "escalate_to:agent:orchestrator-v2"
+              }
+            ]
+          },
+          "delegated_at": "2026-03-09T08:15:00Z"
+        }
+      ]
+    }
+  ]
+}
