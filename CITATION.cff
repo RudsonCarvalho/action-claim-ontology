@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it using the metadata below."
+type: article
+title: "Toward an Operational Ontology of Agentic Action"
+authors:
+  - family-names: Carvalho
+    given-names: Rudson Kiyoshi Souza
+version: "1.0.0"
+date-released: 2026-03-09
+doi: 10.5281/zenodo.18930044
+url: "https://doi.org/10.5281/zenodo.18930044"
+repository-code: "https://github.com/RudsonCarvalho/action-claim-ontology"
+license: CC-BY-4.0
+abstract: >
+  As agentic systems move from experimentation into regulated, high-stakes,
+  and multi-agent environments, the core problem is no longer merely
+  orchestration — it is governability. This paper introduces the Action Claim
+  as the correct pre-execution governance object: a contestable,
+  machine-evaluable proposal that a specific world-state transition should be
+  permitted, structured across declared, derived, and delegation-supplied
+  fields. We argue that governing agentic systems requires not just a protocol
+  for transmitting such objects, but an operational ontology — a typed,
+  reusable semantic framework that defines what exists in the domain of agent
+  action, how effects compose, and how governance systems can evaluate them
+  before execution.
+keywords:
+  - agentic systems
+  - AI governance
+  - action ontology
+  - EU AI Act
+  - pre-execution authorization
+  - delegation chains
+  - world-state transitions
